@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Chat Bot UI</title>
+	<!-- Bootstrap CDN link -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+	<style>
+		/* Gradient background style */
+		body {
+			background: linear-gradient(to bottom, #e6f7ff, #0080ff);
+			height: 100vh;
+		}
+</style>
+
+<!-- Chat button image that will toggle the chatbox -->
+<img src="chat-icon.png" class="chat-btn" id="chat-btn">
+
+<!-- Chatbox container -->
+<div class="chatbox-container">
+  <div class="chatbox-header">
+    <h4>Chat</h4>
+    <button class="close-btn" id="close-btn">&times;</button>
+  </div>
+  <div class="chatbox-body" id="chat-log">
+    <!-- Previous chat messages will be displayed here -->
+  </div>
+  <div class="chatbox-footer" id="chat-input">
+    <!-- User input will be entered here -->
+    <div class="input-group">
+      <input type="text" class="form-control" placeholder="Type your message here" id="user-input">
+      <button class="btn btn-primary" id="send-button">Send</button>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  <style>
+        /* Chat button image style */
+    .chat-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    cursor: pointer;
+    }
+
+    /* Chatbox container style */
+    .chatbox-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    width: 350px;
+    border-radius: 5px;
+    box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.2);
+    background-color: #fff;
+    display: none;
+    }
+
+    /* Chatbox header style */
+    .chatbox-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #007bff;
+    color: #fff;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    }
+
+    /* Chatbox body style */
+    .chatbox-body {
+    height: 250px;
+    padding: 10px;
+    overflow-y: scroll;
+    }
+
+    /* Chatbox footer style */
+    .chatbox-footer {
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    }
+
+    /* Close button style */
+    .close-btn {
+    background-color: transparent;
+    color: #fff;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    }
+
+    .message {
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+    }
+
+    /* Style AI messages */
+    .ai-message {
+    background-color: #f5f5f5;
+    float: left;
+    clear: both;
+    }
+
+    /* Style user messages */
+    .user-message {
+    background-color: #e6f2ff;
+    float: right;
+    clear: both;
+    }
+
+    /* Style message sender label */
+    .message-sender {
+    font-weight: bold;
+    margin-bottom: 5px;
+    }
+
+    /* Style message text */
+    .message-text {
+    font-size: 12px;
+    }
+    .message {
+      border: 1px solid black;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .ai-message {
+      background-color: #f2f2f2;
+      text-align: left;
+    }
+    .user-message {
+      background-color: #0080ff;
+      color: white;
+      text-align: right;
+    }
+  </style>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    // Initialize an empty messages array
+    var messages = [];
+
+    // Display the initial message from the AI assistant
+    var message_html = "<div class='message ai-message'> <div class='message-label'><strong>AI Assistant</strong></div> I am your onboarding assistant. How can I help you?</p></div>";
+    $("#chat-log").append(message_html);
+
+    // Submit the user's input to the chatbot API on form submission
+    $("#send-button").click(function(e) {
+        e.preventDefault();
+        var input_text = $("#user-input").val();
+        var message_html = "<div class='message user-message'><div class='message-label'><strong>You:</strong></div>"  + input_text + "</p></div>";
+        $("#chat-log").append(message_html);
+        messages.push({ content: input_text, role: "user" });
+
+        // Get all the chat messages and convert them to a JSON object
+        var chat_data = $(".message").map(function() {
+            var text = $(this).text();
+            var sender = $(this).hasClass("user-message") ? "user" : "assistant";
+            return { content: text, role: sender };
+        }).get();
+            var data = {
+            input: JSON.stringify(chat_data)
+        };
+        $.ajax({
+            type: "POST",
+            url: "onboarding_bot",
+            data: JSON.stringify(data),
+            contentType: "application/json",
+            success: function(response) {
+                var output_text = response.message;
+                var message_html = "<div class='message ai-message'><div class='message-label'><strong>AI Assistant</strong></div>"+  output_text.replace("Chat Bot:", "").replace("AI Assistant", "")+ "</p></div>";
+                $("#chat-log").append(message_html);
+
+                // Add the AI assistant's message to the messages array
+                messages.push({ text: output_text, sender: "assistant" });
+
+                $("#user-input").val("");
+            },
+            error: function(xhr, status, error) {
+                alert("Oops! Something went wrong. Please try again later.");
+            }
+        });
+    });
+    $(document).ready(function() {
+    // Chat button click event
+    $("#chat-btn").click(function() {
+        $(".chatbox-container").toggle();
+    });
+
+    // Close button click event
+    $("#close-btn").click(function() {
+        $(".chatbox-container").hide();
+    });
+
+    // Send button click event
+    $("#send-button").click(function(e) {
+        // Send user's message to the chatbot
+    });
+    });
+
+</script>
+
+</body>
+</html>
